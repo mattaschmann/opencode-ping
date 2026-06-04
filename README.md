@@ -10,7 +10,7 @@ OpenCode plugin that pings your phone via [ntfy.sh](https://ntfy.sh) when sessio
 4. Clone the plugin:
 
 ```sh
-git clone https://github.com/ma7hatter/opencode-ping.git ~/workspace/opencode-ping
+git clone https://github.com/mattaschmann/opencode-ping.git ~/workspace/opencode-ping
 ```
 
 5. Add the plugin to your `opencode.jsonc`:
