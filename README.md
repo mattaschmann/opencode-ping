@@ -30,8 +30,8 @@ git clone https://github.com/mattaschmann/opencode-ping.git ~/workspace/opencode
 |-----|---------|-------------|
 | `topic` | (required) | Your ntfy topic name |
 | `server` | `https://ntfy.sh` | ntfy server URL |
-| `priority` | `{ idle: "3", error: "4", attention: "4", test: "3" }` | Per-event ntfy priority (1-5) |
-| `tags` | `{ idle: "white_check_mark", error: "warning", attention: "bell", test: "test_tube" }` | Per-event ntfy tag/emoji |
+| `priority` | `{ idle: "4", error: "4", permission: "4", question: "4", test: "4" }` | Per-event ntfy priority (1-5) |
+| `tags` | `{ idle: "white_check_mark", error: "warning", permission: "bell", question: "question", test: "test_tube" }` | Per-event ntfy tag/emoji |
 
 Set `OPENCODE_PING=0` to disable entirely.
 
@@ -54,9 +54,9 @@ Notifications are off by default. Arm a session with a codename to start receivi
 /ping start alpha
 ```
 
-You'll get a push when the session finishes, errors, or needs input. The codename appears as the notification title; the body is just the event kind (`idle`, `error`, `attention`).
+You'll get a push when the session finishes, errors, or needs input. The codename appears as the notification title; the body is just the event kind (`idle`, `error`, `permission`, `question`).
 
-Armed sessions persist across restarts (stored at `~/.cache/opencode-ping/sessions.json`) and expire after 7 days.
+Armed sessions persist across restarts (stored at `~/.cache/opencode-ping/sessions.json`).
 
 ## Privacy
 

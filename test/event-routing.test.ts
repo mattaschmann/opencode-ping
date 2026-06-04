@@ -101,11 +101,24 @@ describe('event routing', () => {
     await hooks.event({ event: { type: 'permission.asked', properties: { sessionID: 's1', id: 'p1', type: 'file', title: 'x', metadata: {}, time: { created: 0 } } } })
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const call = fetchMock.mock.calls[0] as [any, any]
-    expect(call[1].body).toContain('attention')
+    expect(call[1].body).toContain('permission')
   })
 
   it('does not notify on permission.asked when not armed', async () => {
     await hooks.event({ event: { type: 'permission.asked', properties: { sessionID: 's1', id: 'p1', type: 'file', title: 'x', metadata: {}, time: { created: 0 } } } })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('notifies on question.asked when armed', async () => {
+    arm('s1', 'alpha')
+    await hooks.event({ event: { type: 'question.asked', properties: { sessionID: 's1', id: 'q1', questions: [] } } })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const call = fetchMock.mock.calls[0] as [any, any]
+    expect(call[1].body).toContain('question')
+  })
+
+  it('does not notify on question.asked when not armed', async () => {
+    await hooks.event({ event: { type: 'question.asked', properties: { sessionID: 's1', id: 'q1', questions: [] } } })
     expect(fetchMock).not.toHaveBeenCalled()
   })
 

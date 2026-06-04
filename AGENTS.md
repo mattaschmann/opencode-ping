@@ -5,7 +5,7 @@ References:
 
 ## Project Overview
 
-OpenCode plugin that pings your phone via ntfy.sh when sessions finish, error, or need input. Notifications are off by default; arm per-session with `/ping start <codename>`. Bodies are always just the event kind (`idle`, `error`, `attention`, `test`) — no dynamic content. Arch-agnostic — just an HTTPS POST.
+OpenCode plugin that pings your phone via ntfy.sh when sessions finish, error, or need input. Notifications are off by default; arm per-session with `/ping start <codename>`. Bodies are always just the event kind (`idle`, `error`, `permission`, `question`, `test`) — no dynamic content. Arch-agnostic — just an HTTPS POST.
 
 ## Do
 

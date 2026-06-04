@@ -95,7 +95,17 @@ const plugin = async ({ client }: { client: any }) => {
         if (sessionID) {
           const codename = getCodename(sessionID)
           if (codename) {
-            sendNotification('attention', codename)
+            sendNotification('permission', codename)
+          }
+        }
+      }
+
+      if (event.type === 'question.asked') {
+        const sessionID = event.properties?.sessionID
+        if (sessionID) {
+          const codename = getCodename(sessionID)
+          if (codename) {
+            sendNotification('question', codename)
           }
         }
       }

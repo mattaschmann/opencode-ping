@@ -6,7 +6,7 @@ import type { EventKind } from '../types.js'
 
 export const PING_COMMAND_SENTINEL = '__OPENCODE_PING_COMMAND__'
 
-const VALID_EVENTS: EventKind[] = ['idle', 'error', 'attention', 'test']
+const VALID_EVENTS: EventKind[] = ['idle', 'error', 'permission', 'question', 'test']
 const VALID_PRIORITIES = ['1', '2', '3', '4', '5']
 
 export async function handlePingCommand(args: string, sessionID: string): Promise<string> {

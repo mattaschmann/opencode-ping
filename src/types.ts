@@ -1,4 +1,4 @@
-export type EventKind = 'idle' | 'error' | 'attention' | 'test'
+export type EventKind = 'idle' | 'error' | 'permission' | 'question' | 'test'
 
 export interface NtfyConfig {
   version: 1

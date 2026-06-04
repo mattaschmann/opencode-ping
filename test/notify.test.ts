@@ -57,7 +57,7 @@ describe('notify', () => {
 
   it('uses generic body for each event kind', async () => {
     writeFileSync(configPath, JSON.stringify({ version: 1, settings: { topic: 't' } }))
-    for (const kind of ['idle', 'error', 'attention', 'test'] as const) {
+    for (const kind of ['idle', 'error', 'permission', 'question', 'test'] as const) {
       fetchMock.mockClear()
       await sendNotification(kind, 'x')
       const call = fetchMock.mock.calls[0] as [any, any]

@@ -12,20 +12,23 @@ export const SESSION = {
 export const MESSAGES = {
   idle: 'idle',
   error: 'error',
-  attention: 'attention',
+  permission: 'permission',
+  question: 'question',
   test: 'test'
 } as const
 
 export const PRIORITY = {
   idle: '4',
   error: '4',
-  attention: '4',
+  permission: '4',
+  question: '4',
   test: '4'
 } as const
 
 export const TAGS = {
   idle: 'white_check_mark',
   error: 'warning',
-  attention: 'bell',
+  permission: 'bell',
+  question: 'question',
   test: 'test_tube'
 } as const
