@@ -7,7 +7,13 @@ OpenCode plugin that pings your phone via [ntfy.sh](https://ntfy.sh) when sessio
 1. Install the [ntfy app](https://ntfy.sh) on your phone (Android/iOS)
 2. Pick a hard-to-guess topic name (e.g. `opencode-abc123xyz`)
 3. Subscribe to that topic in the ntfy app
-4. Add the plugin to your `opencode.jsonc`:
+4. Clone the plugin:
+
+```sh
+git clone https://github.com/ma7hatter/opencode-ping.git ~/workspace/opencode-ping
+```
+
+5. Add the plugin to your `opencode.jsonc`:
 
 ```json
 {
@@ -15,8 +21,8 @@ OpenCode plugin that pings your phone via [ntfy.sh](https://ntfy.sh) when sessio
 }
 ```
 
-5. Restart OpenCode
-6. Run `/ping init opencode-abc123xyz` to generate the config file
+6. Restart OpenCode
+7. Run `/ping init opencode-abc123xyz` to generate the config file
 
 ## Config
 
