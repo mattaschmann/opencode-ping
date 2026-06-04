@@ -40,7 +40,6 @@ export function load(): void {
     const data: CacheData = JSON.parse(raw)
     if (!data || typeof data !== 'object' || typeof data.sessions !== 'object') return
 
-    const now = Date.now()
     let pruned = false
     sessions.clear()
 
@@ -48,8 +47,7 @@ export function load(): void {
       if (
         entry &&
         typeof entry.codename === 'string' &&
-        typeof entry.armedAt === 'number' &&
-        now - entry.armedAt < SESSION.TTL_MS
+        typeof entry.armedAt === 'number'
       ) {
         sessions.set(id, { codename: entry.codename, armedAt: entry.armedAt })
       } else {

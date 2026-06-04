@@ -5,7 +5,6 @@ export const NTFY = {
 }
 
 export const SESSION = {
-  TTL_MS: 7 * 24 * 60 * 60 * 1000,
   CACHE_DIR: 'opencode-ping',
   CACHE_FILE: 'sessions.json'
 }

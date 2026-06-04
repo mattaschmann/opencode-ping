@@ -96,22 +96,6 @@ describe('session/registry', () => {
       expect(getCodename('s2')).toBe('bravo')
     })
 
-    it('prunes entries older than TTL on load', () => {
-      const cachePath = getCachePath()
-      const eightDaysAgo = Date.now() - 8 * 24 * 60 * 60 * 1000
-      const data = {
-        sessions: {
-          stale: { codename: 'old', armedAt: eightDaysAgo },
-          fresh: { codename: 'new', armedAt: Date.now() }
-        }
-      }
-      mkdirSync(dirname(cachePath), { recursive: true })
-      writeFileSync(cachePath, JSON.stringify(data), 'utf8')
-      load()
-      expect(isArmed('stale')).toBe(false)
-      expect(isArmed('fresh')).toBe(true)
-    })
-
     it('handles corrupt cache file gracefully', () => {
       const cachePath = getCachePath()
       mkdirSync(dirname(cachePath), { recursive: true })

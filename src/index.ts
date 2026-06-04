@@ -56,13 +56,10 @@ const plugin = async ({ client }: { client: any }) => {
     },
 
     event: async ({ event }: { event: any }) => {
-      if (event.type === 'session.status') {
-        const { sessionID, status } = event.properties
-        const s = getSession(sessionID)
-        const prev = s.lastStatus
-        s.lastStatus = status.type
-
-        if (status.type === 'idle' && prev === 'busy') {
+      if (event.type === 'session.idle') {
+        const sessionID = event.properties?.sessionID
+        if (sessionID) {
+          const s = getSession(sessionID)
           clearDebounce(s)
           const codename = getCodename(sessionID)
           if (codename) {
@@ -70,7 +67,15 @@ const plugin = async ({ client }: { client: any }) => {
               sendNotification('idle', codename)
             }, NTFY.DEBOUNCE_MS)
           }
-        } else if (status.type === 'busy') {
+        }
+      }
+
+      if (event.type === 'session.status') {
+        const { sessionID, status } = event.properties
+        const s = getSession(sessionID)
+        s.lastStatus = status.type
+
+        if (status.type === 'busy') {
           clearDebounce(s)
         }
       }
@@ -85,7 +90,7 @@ const plugin = async ({ client }: { client: any }) => {
         }
       }
 
-      if (event.type === 'permission.updated') {
+      if (event.type === 'permission.asked') {
         const sessionID = event.properties?.sessionID
         if (sessionID) {
           const codename = getCodename(sessionID)

@@ -1,24 +1,27 @@
-import { jest, describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals'
-import { handlePingCommand } from '../src/commands/ping.js'
-import { reset, getCodename, isArmed } from '../src/session/registry.js'
-import { writeFileSync, mkdirSync, rmSync } from 'node:fs'
+import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals'
+import { writeFileSync, mkdirSync, rmSync, mkdtempSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
+let tempHome: string = mkdtempSync(join(tmpdir(), 'opencode-ping-test-cmd-init-'))
+
+jest.unstable_mockModule('node:os', () => ({
+  homedir: () => tempHome,
+  tmpdir
+}))
+
+const { handlePingCommand } = await import('../src/commands/ping.js')
+const { reset, getCodename, isArmed } = await import('../src/session/registry.js')
+
 describe('commands/ping', () => {
-  const testDir = join(tmpdir(), 'opencode-ping-test-cmd')
-  const configPath = join(testDir, 'opencode-ping.json')
+  let configPath: string
   let fetchMock: jest.Mock<(input: any, init?: any) => Promise<any>>
 
-  beforeAll(() => {
-    mkdirSync(testDir, { recursive: true })
-  })
-
-  afterAll(() => {
-    rmSync(testDir, { recursive: true, force: true })
-  })
-
   beforeEach(() => {
+    tempHome = mkdtempSync(join(tmpdir(), 'opencode-ping-test-cmd-'))
+    const testDir = join(tempHome, 'config')
+    configPath = join(testDir, 'opencode-ping.json')
+    mkdirSync(testDir, { recursive: true })
     reset()
     process.env.OPENCODE_PING_CONFIG_PATH = configPath
     writeFileSync(configPath, JSON.stringify({ version: 1, settings: { topic: 'test-topic' } }))
@@ -28,6 +31,7 @@ describe('commands/ping', () => {
 
   afterEach(() => {
     delete process.env.OPENCODE_PING_CONFIG_PATH
+    rmSync(tempHome, { recursive: true, force: true })
   })
 
   describe('start', () => {

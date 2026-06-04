@@ -1,25 +1,29 @@
 import { jest, describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals'
-import plugin from '../src/index.js'
-import { reset, arm } from '../src/session/registry.js'
-import { writeFileSync, mkdirSync, rmSync } from 'node:fs'
+import { writeFileSync, mkdirSync, rmSync, mkdtempSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
+let tempHome: string = mkdtempSync(join(tmpdir(), 'opencode-ping-test-events-init-'))
+
+jest.unstable_mockModule('node:os', () => ({
+  homedir: () => tempHome,
+  tmpdir
+}))
+
+const { default: plugin } = await import('../src/index.js')
+const { reset, arm } = await import('../src/session/registry.js')
+
 describe('event routing', () => {
-  const testDir = join(tmpdir(), 'opencode-ping-test-events')
-  const configPath = join(testDir, 'opencode-ping.json')
+  let testDir: string
+  let configPath: string
   let fetchMock: jest.Mock<(input: any, init?: any) => Promise<any>>
   let hooks: any
 
-  beforeAll(() => {
-    mkdirSync(testDir, { recursive: true })
-  })
-
-  afterAll(() => {
-    rmSync(testDir, { recursive: true, force: true })
-  })
-
   beforeEach(async () => {
+    tempHome = mkdtempSync(join(tmpdir(), 'opencode-ping-test-events-'))
+    testDir = join(tempHome, 'config')
+    configPath = join(testDir, 'opencode-ping.json')
+    mkdirSync(testDir, { recursive: true })
     reset()
     process.env.OPENCODE_PING_CONFIG_PATH = configPath
     writeFileSync(configPath, JSON.stringify({ version: 1, settings: { topic: 'test-topic' } }))
@@ -34,21 +38,20 @@ describe('event routing', () => {
     delete process.env.OPENCODE_PING_CONFIG_PATH
     delete process.env.OPENCODE_PING
     jest.useRealTimers()
+    rmSync(tempHome, { recursive: true, force: true })
   })
 
   it('does not notify when session is not armed', async () => {
-    await hooks.event({ event: { type: 'session.status', properties: { sessionID: 's1', status: { type: 'busy' } } } })
-    await hooks.event({ event: { type: 'session.status', properties: { sessionID: 's1', status: { type: 'idle' } } } })
     jest.useFakeTimers()
+    await hooks.event({ event: { type: 'session.idle', properties: { sessionID: 's1' } } })
     jest.advanceTimersByTime(6000)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('notifies on idle transition when armed', async () => {
+  it('notifies on session.idle when armed', async () => {
     jest.useFakeTimers()
     arm('s1', 'alpha')
-    await hooks.event({ event: { type: 'session.status', properties: { sessionID: 's1', status: { type: 'busy' } } } })
-    await hooks.event({ event: { type: 'session.status', properties: { sessionID: 's1', status: { type: 'idle' } } } })
+    await hooks.event({ event: { type: 'session.idle', properties: { sessionID: 's1' } } })
     jest.advanceTimersByTime(6000)
     const call = fetchMock.mock.calls[0] as [any, any]
     expect(call[1].headers.Title).toBe('alpha')
@@ -57,19 +60,17 @@ describe('event routing', () => {
   it('debounces idle notifications', async () => {
     jest.useFakeTimers()
     arm('s1', 'alpha')
-    await hooks.event({ event: { type: 'session.status', properties: { sessionID: 's1', status: { type: 'busy' } } } })
-    await hooks.event({ event: { type: 'session.status', properties: { sessionID: 's1', status: { type: 'idle' } } } })
+    await hooks.event({ event: { type: 'session.idle', properties: { sessionID: 's1' } } })
     jest.advanceTimersByTime(2000)
     expect(fetchMock).not.toHaveBeenCalled()
     jest.advanceTimersByTime(4000)
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('cancels debounce when session goes busy again', async () => {
+  it('cancels debounce when session goes busy', async () => {
     jest.useFakeTimers()
     arm('s1', 'alpha')
-    await hooks.event({ event: { type: 'session.status', properties: { sessionID: 's1', status: { type: 'busy' } } } })
-    await hooks.event({ event: { type: 'session.status', properties: { sessionID: 's1', status: { type: 'idle' } } } })
+    await hooks.event({ event: { type: 'session.idle', properties: { sessionID: 's1' } } })
     jest.advanceTimersByTime(2000)
     await hooks.event({ event: { type: 'session.status', properties: { sessionID: 's1', status: { type: 'busy' } } } })
     jest.advanceTimersByTime(6000)
@@ -95,16 +96,16 @@ describe('event routing', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('notifies on permission.updated when armed', async () => {
+  it('notifies on permission.asked when armed', async () => {
     arm('s1', 'alpha')
-    await hooks.event({ event: { type: 'permission.updated', properties: { sessionID: 's1', id: 'p1', type: 'file', title: 'x', metadata: {}, time: { created: 0 } } } })
+    await hooks.event({ event: { type: 'permission.asked', properties: { sessionID: 's1', id: 'p1', type: 'file', title: 'x', metadata: {}, time: { created: 0 } } } })
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const call = fetchMock.mock.calls[0] as [any, any]
     expect(call[1].body).toContain('attention')
   })
 
-  it('does not notify on permission.updated when not armed', async () => {
-    await hooks.event({ event: { type: 'permission.updated', properties: { sessionID: 's1', id: 'p1', type: 'file', title: 'x', metadata: {}, time: { created: 0 } } } })
+  it('does not notify on permission.asked when not armed', async () => {
+    await hooks.event({ event: { type: 'permission.asked', properties: { sessionID: 's1', id: 'p1', type: 'file', title: 'x', metadata: {}, time: { created: 0 } } } })
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
