@@ -1,0 +1,50 @@
+{
+  "name": "opencode-ntfy",
+  "version": "0.0.0",
+  "description": "OpenCode plugin that posts generic phone notifications via ntfy.sh when sessions finish, error, or need input.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "format": "prettier --write 'src/**/*.ts' 'test/**/*.ts'"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "ntfy",
+    "notifications",
+    "push"
+  ],
+  "author": "Matt Aschmann <matt.aschmann@gmail.com>",
+  "license": "MIT",
+  "peerDependencies": {
+    "@opencode-ai/plugin": "^1.2.6"
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "^1.2.6",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.0.0",
+    "bun-types": "^1.3.6",
+    "jest": "^30.3.0",
+    "prettier": "^3.4.2",
+    "ts-jest": "^29.4.9",
+    "typescript": "^5.7.3"
+  },
+  "opencode": {
+    "type": "plugin",
+    "hooks": [
+      "event",
+      "command.execute.before"
+    ]
+  },
+  "files": [
+    "src",
+    "package.json",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}
