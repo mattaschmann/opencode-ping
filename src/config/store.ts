@@ -5,9 +5,9 @@ import { NTFY } from '../constants.js'
 import type { NtfyConfig } from '../types.js'
 
 export function getConfigFilePath(): string {
-  const override = process.env.OPENCODE_NTFY_CONFIG_PATH
+  const override = process.env.OPENCODE_PING_CONFIG_PATH
   if (override) return override
-  return join(homedir(), '.config', 'opencode', 'opencode-ntfy.json')
+  return join(homedir(), '.config', 'opencode', 'opencode-ping.json')
 }
 
 export function readConfig(): NtfyConfig {

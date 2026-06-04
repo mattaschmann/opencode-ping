@@ -6,8 +6,8 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('event routing', () => {
-  const testDir = join(tmpdir(), 'opencode-ntfy-test-events')
-  const configPath = join(testDir, 'opencode-ntfy.json')
+  const testDir = join(tmpdir(), 'opencode-ping-test-events')
+  const configPath = join(testDir, 'opencode-ping.json')
   let fetchMock: jest.Mock<(input: any, init?: any) => Promise<any>>
   let hooks: any
 
@@ -21,18 +21,18 @@ describe('event routing', () => {
 
   beforeEach(async () => {
     reset()
-    process.env.OPENCODE_NTFY_CONFIG_PATH = configPath
+    process.env.OPENCODE_PING_CONFIG_PATH = configPath
     writeFileSync(configPath, JSON.stringify({ version: 1, settings: { topic: 'test-topic' } }))
     fetchMock = jest.fn<(input: any, init?: any) => Promise<any>>().mockResolvedValue({ ok: true })
     globalThis.fetch = fetchMock as any
-    delete process.env.OPENCODE_NTFY
+    delete process.env.OPENCODE_PING
     const client = { session: { prompt: jest.fn() } }
     hooks = await plugin({ client })
   })
 
   afterEach(() => {
-    delete process.env.OPENCODE_NTFY_CONFIG_PATH
-    delete process.env.OPENCODE_NTFY
+    delete process.env.OPENCODE_PING_CONFIG_PATH
+    delete process.env.OPENCODE_PING
     jest.useRealTimers()
   })
 
@@ -108,8 +108,8 @@ describe('event routing', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('returns empty hooks when OPENCODE_NTFY=0', async () => {
-    process.env.OPENCODE_NTFY = '0'
+  it('returns empty hooks when OPENCODE_PING=0', async () => {
+    process.env.OPENCODE_PING = '0'
     const client = { session: { prompt: jest.fn() } }
     const result = await plugin({ client })
     expect(result).toEqual({})

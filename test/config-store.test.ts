@@ -4,8 +4,8 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('config/store', () => {
-  const testDir = join(tmpdir(), 'opencode-ntfy-test-config')
-  const configPath = join(testDir, 'opencode-ntfy.json')
+  const testDir = join(tmpdir(), 'opencode-ping-test-config')
+  const configPath = join(testDir, 'opencode-ping.json')
 
   beforeAll(() => {
     mkdirSync(testDir, { recursive: true })
@@ -16,12 +16,12 @@ describe('config/store', () => {
   })
 
   beforeEach(() => {
-    process.env.OPENCODE_NTFY_CONFIG_PATH = configPath
+    process.env.OPENCODE_PING_CONFIG_PATH = configPath
     try { rmSync(configPath) } catch {}
   })
 
   afterEach(() => {
-    delete process.env.OPENCODE_NTFY_CONFIG_PATH
+    delete process.env.OPENCODE_PING_CONFIG_PATH
   })
 
   it('returns defaults when config file is missing', () => {
@@ -57,10 +57,10 @@ describe('config/store', () => {
     expect(getTopic()).toBeUndefined()
   })
 
-  it('respects OPENCODE_NTFY_CONFIG_PATH env override', () => {
+  it('respects OPENCODE_PING_CONFIG_PATH env override', () => {
     const altPath = join(testDir, 'alt.json')
     writeFileSync(altPath, JSON.stringify({ version: 1, settings: { topic: 'alt-topic' } }))
-    process.env.OPENCODE_NTFY_CONFIG_PATH = altPath
+    process.env.OPENCODE_PING_CONFIG_PATH = altPath
     expect(getTopic()).toBe('alt-topic')
   })
 })

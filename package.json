@@ -1,7 +1,7 @@
 {
-  "name": "opencode-ntfy",
+  "name": "opencode-ping",
   "version": "0.0.0",
-  "description": "OpenCode plugin that posts generic phone notifications via ntfy.sh when sessions finish, error, or need input.",
+  "description": "OpenCode plugin that pings your phone via ntfy.sh when sessions finish, error, or need input.",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",

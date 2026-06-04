@@ -21,9 +21,9 @@ export async function sendNotification(kind: EventKind, codename: string): Promi
     })
 
     if (!response.ok) {
-      console.error(`[opencode-ntfy] ntfy responded ${response.status}`)
+      console.error(`[opencode-ping] ntfy responded ${response.status}`)
     }
   } catch (err) {
-    console.error(`[opencode-ntfy] Failed to send: ${err}`)
+    console.error(`[opencode-ping] Failed to send: ${err}`)
   }
 }

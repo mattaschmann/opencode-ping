@@ -2,9 +2,9 @@ import { sendNotification } from '../notify.js'
 import { getTopic, writeDefaultConfig } from '../config/store.js'
 import { arm, disarm, getCodename, isArmed } from '../session/registry.js'
 
-export const NTFY_COMMAND_SENTINEL = '__OPENCODE_NTFY_COMMAND__'
+export const PING_COMMAND_SENTINEL = '__OPENCODE_PING_COMMAND__'
 
-export async function handleNtfyCommand(args: string, sessionID: string): Promise<string> {
+export async function handlePingCommand(args: string, sessionID: string): Promise<string> {
   const parts = args.trim().split(/\s+/)
   const sub = parts[0] ?? 'help'
 
@@ -12,7 +12,7 @@ export async function handleNtfyCommand(args: string, sessionID: string): Promis
     case 'init': {
       const topic = parts[1]
       if (!topic) {
-        return 'Usage: /ntfy init <topic>'
+        return 'Usage: /ping init <topic>'
       }
       const { path, created } = writeDefaultConfig(topic)
       if (created) {
@@ -23,10 +23,10 @@ export async function handleNtfyCommand(args: string, sessionID: string): Promis
     case 'start': {
       const codename = parts[1]
       if (!codename) {
-        return 'Usage: /ntfy start <codename>'
+        return 'Usage: /ping start <codename>'
       }
       if (!getTopic()) {
-        return 'No topic configured. Set topic in ~/.config/opencode/opencode-ntfy.json'
+        return 'No topic configured. Set topic in ~/.config/opencode/opencode-ping.json'
       }
       arm(sessionID, codename)
       return `Notifications armed as "${codename}".`
@@ -48,10 +48,10 @@ export async function handleNtfyCommand(args: string, sessionID: string): Promis
     case 'test': {
       const codename = parts[1]
       if (!codename) {
-        return 'Usage: /ntfy test <codename>'
+        return 'Usage: /ping test <codename>'
       }
       if (!getTopic()) {
-        return 'No topic configured. Set topic in ~/.config/opencode/opencode-ntfy.json'
+        return 'No topic configured. Set topic in ~/.config/opencode/opencode-ping.json'
       }
       await sendNotification('test', codename)
       return 'Test notification sent.'
@@ -59,12 +59,12 @@ export async function handleNtfyCommand(args: string, sessionID: string): Promis
     case 'help':
     default:
       return [
-        '/ntfy init <topic>     — generate config file',
-        '/ntfy start <codename>  — arm notifications for this session',
-        '/ntfy stop              — disarm notifications',
-        '/ntfy status            — show armed state',
-        '/ntfy test <codename>   — send a test push',
-        '/ntfy help              — show this message'
+        '/ping init <topic>     — generate config file',
+        '/ping start <codename>  — arm notifications for this session',
+        '/ping stop              — disarm notifications',
+        '/ping status            — show armed state',
+        '/ping test <codename>   — send a test push',
+        '/ping help              — show this message'
       ].join('\n')
   }
 }

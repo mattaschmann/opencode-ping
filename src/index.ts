@@ -1,6 +1,6 @@
 import { NTFY } from './constants.js'
 import { sendNotification } from './notify.js'
-import { handleNtfyCommand, NTFY_COMMAND_SENTINEL } from './commands/ntfy.js'
+import { handlePingCommand, PING_COMMAND_SENTINEL } from './commands/ping.js'
 import { getCodename } from './session/registry.js'
 
 interface SessionState {
@@ -27,21 +27,21 @@ function clearDebounce(s: SessionState): void {
 }
 
 const plugin = async ({ client }: { client: any }) => {
-  if (process.env.OPENCODE_NTFY === '0') return {}
+  if (process.env.OPENCODE_PING === '0') return {}
 
   return {
     config: async (input: any) => {
       if (!input || typeof input !== 'object') return
       input.command ??= {}
-      input.command['ntfy'] = {
+      input.command['ping'] = {
         template: '',
-        description: 'ntfy push notification commands (start, stop, status, test, help)'
+        description: 'push notification commands (start, stop, status, test, help)'
       }
     },
 
     'command.execute.before': async (input: any) => {
-      if (input.command === 'ntfy') {
-        const result = await handleNtfyCommand(input.arguments, input.sessionID)
+      if (input.command === 'ping') {
+        const result = await handlePingCommand(input.arguments, input.sessionID)
         await client.session.prompt({
           path: { id: input.sessionID },
           body: {
@@ -49,7 +49,7 @@ const plugin = async ({ client }: { client: any }) => {
             parts: [{ type: 'text', text: result, ignored: true }]
           }
         })
-        throw new Error(NTFY_COMMAND_SENTINEL)
+        throw new Error(PING_COMMAND_SENTINEL)
       }
     },
 

@@ -1,7 +1,7 @@
 export const NTFY = {
   SERVER_DEFAULT: 'https://ntfy.sh',
   DEBOUNCE_MS: 5000,
-  PROVIDER_ID: 'opencode-ntfy' as const
+  PROVIDER_ID: 'opencode-ping' as const
 }
 
 export const MESSAGES = {

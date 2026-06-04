@@ -1,11 +1,11 @@
-# AGENTS.md - opencode-ntfy
+# AGENTS.md - opencode-ping
 
 References:
 - https://agentsmd.io/agents-md-best-practices
 
 ## Project Overview
 
-OpenCode plugin that posts generic phone notifications to a public ntfy.sh topic when sessions finish, error, or need input. Messages are intentionally static (no session titles, paths, or error text) so a public topic is safe. Arch-agnostic — just an HTTPS POST. Modeled on opencode-kirocli-bridge.
+OpenCode plugin that pings your phone via ntfy.sh when sessions finish, error, or need input. Notifications are off by default; arm per-session with `/ping start <codename>`. Bodies are always just the event kind (`idle`, `error`, `attention`, `test`) — no dynamic content. Arch-agnostic — just an HTTPS POST.
 
 ## Do
 
@@ -36,9 +36,10 @@ Note: No build step — plugin is shipped as TypeScript source, loaded directly 
 - `src/index.ts` - Main plugin entry point (event + command hooks)
 - `src/constants.ts` - Defaults, generic messages, priorities, tags
 - `src/types.ts` - Config + event type definitions
-- `src/config/store.ts` - Read ~/.config/opencode/opencode-ntfy.json
+- `src/config/store.ts` - Read/write ~/.config/opencode/opencode-ping.json
 - `src/notify.ts` - POST to ntfy.sh
-- `src/commands/ntfy.ts` - /ntfy slash command handler
+- `src/commands/ping.ts` - /ping slash command handler (init, start, stop, status, test, help)
+- `src/session/registry.ts` - In-memory session arm/disarm state
 - `test/` - Jest test suites
 
 ## Testing
@@ -53,8 +54,8 @@ Note: No build step — plugin is shipped as TypeScript source, loaded directly 
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `OPENCODE_NTFY_CONFIG_PATH` | `~/.config/opencode/opencode-ntfy.json` | Override config file path |
-| `OPENCODE_NTFY` | (unset) | Set to `0` to disable entirely |
+| `OPENCODE_PING_CONFIG_PATH` | `~/.config/opencode/opencode-ping.json` | Override config file path |
+| `OPENCODE_PING` | (unset) | Set to `0` to disable entirely |
 
 ## When Stuck
 

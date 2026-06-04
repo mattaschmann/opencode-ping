@@ -6,8 +6,8 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 describe('notify', () => {
-  const testDir = join(tmpdir(), 'opencode-ntfy-test-notify')
-  const configPath = join(testDir, 'opencode-ntfy.json')
+  const testDir = join(tmpdir(), 'opencode-ping-test-notify')
+  const configPath = join(testDir, 'opencode-ping.json')
   let fetchMock: jest.Mock<(input: any, init?: any) => Promise<any>>
 
   beforeAll(() => {
@@ -19,13 +19,13 @@ describe('notify', () => {
   })
 
   beforeEach(() => {
-    process.env.OPENCODE_NTFY_CONFIG_PATH = configPath
+    process.env.OPENCODE_PING_CONFIG_PATH = configPath
     fetchMock = jest.fn<(input: any, init?: any) => Promise<any>>().mockResolvedValue({ ok: true })
     globalThis.fetch = fetchMock as any
   })
 
   afterEach(() => {
-    delete process.env.OPENCODE_NTFY_CONFIG_PATH
+    delete process.env.OPENCODE_PING_CONFIG_PATH
   })
 
   it('no-ops silently when no topic configured', async () => {
