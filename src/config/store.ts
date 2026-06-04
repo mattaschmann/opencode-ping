@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { NTFY } from '../constants.js'
-import type { NtfyConfig } from '../types.js'
+import { NTFY, PRIORITY, TAGS } from '../constants.js'
+import type { EventKind, NtfyConfig } from '../types.js'
 
 export function getConfigFilePath(): string {
   const override = process.env.OPENCODE_PING_CONFIG_PATH
@@ -23,12 +23,26 @@ export function readConfig(): NtfyConfig {
   return { version: 1, settings: {} }
 }
 
+export function writeConfig(config: NtfyConfig): void {
+  const configPath = getConfigFilePath()
+  mkdirSync(dirname(configPath), { recursive: true })
+  writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf8')
+}
+
 export function getTopic(): string | undefined {
   return readConfig().settings.topic
 }
 
 export function getServer(): string {
   return readConfig().settings.server ?? NTFY.SERVER_DEFAULT
+}
+
+export function getPriority(kind: EventKind): string {
+  return readConfig().settings.priority?.[kind] ?? PRIORITY[kind]
+}
+
+export function getTag(kind: EventKind): string {
+  return readConfig().settings.tags?.[kind] ?? TAGS[kind]
 }
 
 export function writeDefaultConfig(topic: string): { path: string; created: boolean } {
@@ -40,7 +54,6 @@ export function writeDefaultConfig(topic: string): { path: string; created: bool
     version: 1,
     settings: { topic, server: NTFY.SERVER_DEFAULT }
   }
-  mkdirSync(dirname(configPath), { recursive: true })
-  writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf8')
+  writeConfig(config)
   return { path: configPath, created: true }
 }

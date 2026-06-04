@@ -1,7 +1,7 @@
 import { NTFY } from './constants.js'
 import { sendNotification } from './notify.js'
 import { handlePingCommand, PING_COMMAND_SENTINEL } from './commands/ping.js'
-import { getCodename } from './session/registry.js'
+import { getCodename, load as loadSessions } from './session/registry.js'
 
 interface SessionState {
   lastStatus: string
@@ -28,6 +28,8 @@ function clearDebounce(s: SessionState): void {
 
 const plugin = async ({ client }: { client: any }) => {
   if (process.env.OPENCODE_PING === '0') return {}
+
+  loadSessions()
 
   return {
     config: async (input: any) => {

@@ -30,6 +30,8 @@ git clone https://github.com/mattaschmann/opencode-ping.git ~/workspace/opencode
 |-----|---------|-------------|
 | `topic` | (required) | Your ntfy topic name |
 | `server` | `https://ntfy.sh` | ntfy server URL |
+| `priority` | `{ idle: "3", error: "4", attention: "4", test: "3" }` | Per-event ntfy priority (1-5) |
+| `tags` | `{ idle: "white_check_mark", error: "warning", attention: "bell", test: "test_tube" }` | Per-event ntfy tag/emoji |
 
 Set `OPENCODE_PING=0` to disable entirely.
 
@@ -40,6 +42,8 @@ Set `OPENCODE_PING=0` to disable entirely.
 - `/ping stop` — disarm notifications
 - `/ping status` — show armed state
 - `/ping test <codename>` — send a test push to verify delivery
+- `/ping priority [event] [1-5]` — get/set notification priority per event
+- `/ping tag [event] [tag]` — get/set notification tag/emoji per event
 - `/ping help` — show available commands
 
 ## Usage
@@ -51,6 +55,8 @@ Notifications are off by default. Arm a session with a codename to start receivi
 ```
 
 You'll get a push when the session finishes, errors, or needs input. The codename appears as the notification title; the body is just the event kind (`idle`, `error`, `attention`).
+
+Armed sessions persist across restarts (stored at `~/.cache/opencode-ping/sessions.json`) and expire after 7 days.
 
 ## Privacy
 

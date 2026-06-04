@@ -38,8 +38,8 @@ Note: No build step — plugin is shipped as TypeScript source, loaded directly 
 - `src/types.ts` - Config + event type definitions
 - `src/config/store.ts` - Read/write ~/.config/opencode/opencode-ping.json
 - `src/notify.ts` - POST to ntfy.sh
-- `src/commands/ping.ts` - /ping slash command handler (init, start, stop, status, test, help)
-- `src/session/registry.ts` - In-memory session arm/disarm state
+- `src/commands/ping.ts` - /ping slash command handler (init, start, stop, status, test, priority, tag, help)
+- `src/session/registry.ts` - Session arm/disarm state with persistence to ~/.cache/opencode-ping/sessions.json
 - `test/` - Jest test suites
 
 ## Testing
@@ -47,7 +47,7 @@ Note: No build step — plugin is shipped as TypeScript source, loaded directly 
 - Jest tests use ESM mode with ts-jest
 - Test config store: defaults, round-trip, corrupt JSON recovery
 - Test notify: mock fetch, assert generic bodies, assert headers
-- Test event routing: debounce, per-event toggles
+- Test session registry: arm/disarm, persistence round-trip, TTL pruning, corrupt file recovery
 - Run `npm test` and `npm run typecheck` before submitting
 
 ## Environment Variables

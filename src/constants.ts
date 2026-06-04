@@ -4,6 +4,12 @@ export const NTFY = {
   PROVIDER_ID: 'opencode-ping' as const
 }
 
+export const SESSION = {
+  TTL_MS: 7 * 24 * 60 * 60 * 1000,
+  CACHE_DIR: 'opencode-ping',
+  CACHE_FILE: 'sessions.json'
+}
+
 export const MESSAGES = {
   idle: 'idle',
   error: 'error',
@@ -12,10 +18,10 @@ export const MESSAGES = {
 } as const
 
 export const PRIORITY = {
-  idle: '3',
+  idle: '4',
   error: '4',
   attention: '4',
-  test: '3'
+  test: '4'
 } as const
 
 export const TAGS = {

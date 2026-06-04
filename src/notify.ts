@@ -1,5 +1,5 @@
-import { MESSAGES, PRIORITY, TAGS } from './constants.js'
-import { getServer, getTopic } from './config/store.js'
+import { MESSAGES } from './constants.js'
+import { getPriority, getServer, getTag, getTopic } from './config/store.js'
 import type { EventKind } from './types.js'
 
 export async function sendNotification(kind: EventKind, codename: string): Promise<void> {
@@ -14,8 +14,8 @@ export async function sendNotification(kind: EventKind, codename: string): Promi
       method: 'POST',
       headers: {
         'Title': codename,
-        'Priority': PRIORITY[kind],
-        'Tags': TAGS[kind]
+        'Priority': getPriority(kind),
+        'Tags': getTag(kind)
       },
       body: MESSAGES[kind]
     })
