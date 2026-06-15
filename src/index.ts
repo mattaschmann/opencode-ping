@@ -1,6 +1,6 @@
 import { NTFY } from './constants.js'
 import { sendNotification } from './notify.js'
-import { handlePingCommand, PING_COMMAND_SENTINEL } from './commands/ping.js'
+import { handlePingCommand } from './commands/ping.js'
 import { getCodename, load as loadSessions } from './session/registry.js'
 
 interface SessionState {
@@ -41,17 +41,10 @@ const plugin = async ({ client }: { client: any }) => {
       }
     },
 
-    'command.execute.before': async (input: any) => {
+    'command.execute.before': async (input: any, output: any) => {
       if (input.command === 'ping') {
         const result = await handlePingCommand(input.arguments, input.sessionID)
-        await client.session.prompt({
-          path: { id: input.sessionID },
-          body: {
-            noReply: true,
-            parts: [{ type: 'text', text: result, ignored: true }]
-          }
-        })
-        throw new Error(PING_COMMAND_SENTINEL)
+        output.parts.splice(0, output.parts.length, { type: 'text', text: result, ignored: true })
       }
     },
 

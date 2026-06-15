@@ -4,8 +4,6 @@ import { arm, disarm, getCodename, isArmed } from '../session/registry.js'
 import { PRIORITY, TAGS } from '../constants.js'
 import type { EventKind } from '../types.js'
 
-export const PING_COMMAND_SENTINEL = '__OPENCODE_PING_COMMAND__'
-
 const VALID_EVENTS: EventKind[] = ['idle', 'error', 'permission', 'question', 'test']
 const VALID_PRIORITIES = ['1', '2', '3', '4', '5']
 
