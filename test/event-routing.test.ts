@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals'
+import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals'
 import { writeFileSync, mkdirSync, rmSync, mkdtempSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -10,14 +10,13 @@ jest.unstable_mockModule('node:os', () => ({
   tmpdir
 }))
 
-const { default: plugin } = await import('../src/index.js')
+const { handleEvent, disposeAll } = await import('../src/session/router.js')
 const { reset, arm } = await import('../src/session/registry.js')
 
 describe('event routing', () => {
   let testDir: string
   let configPath: string
   let fetchMock: jest.Mock<(input: any, init?: any) => Promise<any>>
-  let hooks: any
 
   beforeEach(async () => {
     tempHome = mkdtempSync(join(tmpdir(), 'opencode-ping-test-events-'))
@@ -25,107 +24,121 @@ describe('event routing', () => {
     configPath = join(testDir, 'opencode-ping.json')
     mkdirSync(testDir, { recursive: true })
     reset()
+    disposeAll()
     process.env.OPENCODE_PING_CONFIG_PATH = configPath
     writeFileSync(configPath, JSON.stringify({ version: 1, settings: { topic: 'test-topic' } }))
     fetchMock = jest.fn<(input: any, init?: any) => Promise<any>>().mockResolvedValue({ ok: true })
     globalThis.fetch = fetchMock as any
     delete process.env.OPENCODE_PING
-    const client = { session: { prompt: jest.fn() } }
-    hooks = await plugin({ client })
   })
 
   afterEach(() => {
+    disposeAll()
     delete process.env.OPENCODE_PING_CONFIG_PATH
     delete process.env.OPENCODE_PING
     jest.useRealTimers()
     rmSync(tempHome, { recursive: true, force: true })
   })
 
-  it('does not notify when session is not armed', async () => {
+  it('does not notify when session is not armed', () => {
     jest.useFakeTimers()
-    await hooks.event({ event: { type: 'session.idle', properties: { sessionID: 's1' } } })
+    handleEvent({ type: 'session.step.ended', data: { sessionID: 's1' } })
     jest.advanceTimersByTime(6000)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('notifies on session.idle when armed', async () => {
+  it('notifies after step.ended goes quiet when armed', () => {
     jest.useFakeTimers()
     arm('s1', 'alpha')
-    await hooks.event({ event: { type: 'session.idle', properties: { sessionID: 's1' } } })
+    handleEvent({ type: 'session.step.ended', data: { sessionID: 's1' } })
     jest.advanceTimersByTime(6000)
     const call = fetchMock.mock.calls[0] as [any, any]
     expect(call[1].headers.Title).toBe('alpha')
   })
 
-  it('debounces idle notifications', async () => {
+  it('debounces idle notifications', () => {
     jest.useFakeTimers()
     arm('s1', 'alpha')
-    await hooks.event({ event: { type: 'session.idle', properties: { sessionID: 's1' } } })
+    handleEvent({ type: 'session.step.ended', data: { sessionID: 's1' } })
     jest.advanceTimersByTime(2000)
     expect(fetchMock).not.toHaveBeenCalled()
     jest.advanceTimersByTime(4000)
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('cancels debounce when session goes busy', async () => {
+  it('coalesces multiple step.ended into a single ping', () => {
     jest.useFakeTimers()
     arm('s1', 'alpha')
-    await hooks.event({ event: { type: 'session.idle', properties: { sessionID: 's1' } } })
+    handleEvent({ type: 'session.step.ended', data: { sessionID: 's1' } })
+    jest.advanceTimersByTime(3000)
+    handleEvent({ type: 'session.step.ended', data: { sessionID: 's1' } })
+    jest.advanceTimersByTime(3000)
+    expect(fetchMock).not.toHaveBeenCalled()
     jest.advanceTimersByTime(2000)
-    await hooks.event({ event: { type: 'session.status', properties: { sessionID: 's1', status: { type: 'busy' } } } })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('cancels the idle debounce when a new step starts', () => {
+    jest.useFakeTimers()
+    arm('s1', 'alpha')
+    handleEvent({ type: 'session.step.ended', data: { sessionID: 's1' } })
+    jest.advanceTimersByTime(2000)
+    handleEvent({ type: 'session.step.started', data: { sessionID: 's1' } })
     jest.advanceTimersByTime(6000)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('notifies on session.error when armed', async () => {
+  it('disposeAll clears pending idle timers', () => {
+    jest.useFakeTimers()
     arm('s1', 'alpha')
-    await hooks.event({ event: { type: 'session.error', properties: { sessionID: 's1', error: {} } } })
+    handleEvent({ type: 'session.step.ended', data: { sessionID: 's1' } })
+    disposeAll()
+    jest.advanceTimersByTime(6000)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('notifies on session.execution.failed when armed', () => {
+    arm('s1', 'alpha')
+    handleEvent({ type: 'session.execution.failed', data: { sessionID: 's1', error: {} } })
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const call = fetchMock.mock.calls[0] as [any, any]
     expect(call[1].body).toContain('error')
   })
 
-  it('does not notify on session.error when not armed', async () => {
-    await hooks.event({ event: { type: 'session.error', properties: { sessionID: 's1', error: {} } } })
+  it('does not notify on session.execution.failed when not armed', () => {
+    handleEvent({ type: 'session.execution.failed', data: { sessionID: 's1', error: {} } })
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('ignores session.error without sessionID', async () => {
+  it('ignores session.execution.failed without sessionID', () => {
     arm('s1', 'alpha')
-    await hooks.event({ event: { type: 'session.error', properties: { error: {} } } })
+    handleEvent({ type: 'session.execution.failed', data: { error: {} } })
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('notifies on permission.asked when armed', async () => {
+  it('notifies on permission.asked when armed', () => {
     arm('s1', 'alpha')
-    await hooks.event({ event: { type: 'permission.asked', properties: { sessionID: 's1', id: 'p1', type: 'file', title: 'x', metadata: {}, time: { created: 0 } } } })
+    handleEvent({ type: 'permission.asked', data: { sessionID: 's1', id: 'p1', action: 'edit', resources: [] } })
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const call = fetchMock.mock.calls[0] as [any, any]
     expect(call[1].body).toContain('permission')
   })
 
-  it('does not notify on permission.asked when not armed', async () => {
-    await hooks.event({ event: { type: 'permission.asked', properties: { sessionID: 's1', id: 'p1', type: 'file', title: 'x', metadata: {}, time: { created: 0 } } } })
+  it('does not notify on permission.asked when not armed', () => {
+    handleEvent({ type: 'permission.asked', data: { sessionID: 's1', id: 'p1', action: 'edit', resources: [] } })
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('notifies on question.asked when armed', async () => {
+  it('notifies on form.created when armed (nested sessionID)', () => {
     arm('s1', 'alpha')
-    await hooks.event({ event: { type: 'question.asked', properties: { sessionID: 's1', id: 'q1', questions: [] } } })
+    handleEvent({ type: 'form.created', data: { form: { id: 'q1', sessionID: 's1', title: 'x', fields: [] } } })
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const call = fetchMock.mock.calls[0] as [any, any]
     expect(call[1].body).toContain('question')
   })
 
-  it('does not notify on question.asked when not armed', async () => {
-    await hooks.event({ event: { type: 'question.asked', properties: { sessionID: 's1', id: 'q1', questions: [] } } })
+  it('does not notify on form.created when not armed', () => {
+    handleEvent({ type: 'form.created', data: { form: { id: 'q1', sessionID: 's1', title: 'x', fields: [] } } })
     expect(fetchMock).not.toHaveBeenCalled()
-  })
-
-  it('returns empty hooks when OPENCODE_PING=0', async () => {
-    process.env.OPENCODE_PING = '0'
-    const client = { session: { prompt: jest.fn() } }
-    const result = await plugin({ client })
-    expect(result).toEqual({})
   })
 })

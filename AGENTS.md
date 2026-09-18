@@ -10,7 +10,7 @@ OpenCode plugin that pings your phone via ntfy.sh when sessions finish, error, o
 ## Do
 
 - Use TypeScript for all source files
-- Use `@opencode-ai/plugin` for type definitions
+- Use `@opencode/plugin` (V2) for type definitions and `Plugin.define`
 - Keep `src/index.ts` as the main entry point; delegate to submodules
 - Keep notification bodies GENERIC — never include session title, tool name, file path, or error message
 - Run `npm run typecheck` and `npm test` before presenting changes
@@ -19,7 +19,7 @@ OpenCode plugin that pings your phone via ntfy.sh when sessions finish, error, o
 ## Don't
 
 - Add heavy or unnecessary dependencies
-- Use default exports for anything other than the main plugin
+- Use default exports only for the plugin entrypoints (`src/index.ts`, `src/tui.ts`); named exports everywhere else
 - Include dynamic/sensitive content in notification bodies
 - Make large speculative changes without confirming with the user
 
@@ -33,13 +33,17 @@ Note: No build step — plugin is shipped as TypeScript source, loaded directly 
 
 ## Project Structure
 
-- `src/index.ts` - Main plugin entry point (event + command hooks)
+- `src/index.ts` - Main plugin entry point (`Plugin.define`; command + event subscription wiring)
 - `src/constants.ts` - Defaults, generic messages, priorities, tags
 - `src/types.ts` - Config + event type definitions
+- `src/rpc.ts` - Shared RPC definition for the server → TUI toast bridge
+- `src/tui.ts` - `./tui` sub-plugin that renders toasts (only entrypoint that can)
 - `src/config/store.ts` - Read/write ~/.config/opencode/opencode-ping.json
 - `src/notify.ts` - POST to ntfy.sh
 - `src/commands/ping.ts` - /ping slash command handler (init, start, stop, status, test, priority, tag, help)
 - `src/session/registry.ts` - Session arm/disarm state with persistence to ~/.cache/opencode-ping/sessions.json
+- `src/session/router.ts` - Pure `handleEvent(event)` routing V2 events to notifications; owns the debounce map + `disposeAll()`
+- `src/session/coordinator.ts` - Process-wide single-subscription coordinator (V2 runs `setup` per location); owner election + refcount + handoff
 - `test/` - Jest test suites
 
 ## Testing

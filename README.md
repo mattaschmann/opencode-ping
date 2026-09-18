@@ -17,11 +17,11 @@ git clone https://github.com/mattaschmann/opencode-ping.git ~/workspace/opencode
 
 ```json
 {
-  "plugin": ["~/workspace/opencode-ping"]
+  "plugins": ["~/workspace/opencode-ping"]
 }
 ```
 
-6. Restart OpenCode
+6. Restart OpenCode (or `opencode service restart` if a background service is running)
 7. Run `/ping init opencode-abc123xyz` to generate the config file
 
 ## Config
