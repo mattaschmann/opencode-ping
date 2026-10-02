@@ -8,6 +8,7 @@ Last updated: 2026-09-19
 
 | Priority | Task | State | Blocked by | Next action |
 |----------|------|-------|------------|-------------|
+| 1 | v1-tag-and-main-switch.md | planned | — | Tag `main` @ `6d7c158` as `v1-final`; defer `main`→V2 switch until V2 API settles |
 
 ## Recently Completed
 

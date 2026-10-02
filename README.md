@@ -56,6 +56,8 @@ Notifications are off by default. Arm a session with a codename to start receivi
 
 You'll get a push when the session finishes, errors, or needs input. The codename appears as the notification title; the body is just the event kind (`idle`, `error`, `permission`, `question`).
 
+The `idle` ping fires only once the whole session family is quiet — if a turn spawns subagents, a single subagent finishing while the main session (or a sibling) keeps working will not trigger it.
+
 Armed sessions persist across restarts (stored at `~/.cache/opencode-ping/sessions.json`).
 
 ## Privacy

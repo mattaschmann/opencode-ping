@@ -24,7 +24,7 @@
   "author": "Matt Aschmann <matt.aschmann@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@opencode/plugin": "2.0.6",
+    "@opencode/plugin": "2.0.22",
     "effect": "4.0.0-rc.112"
   },
   "devDependencies": {

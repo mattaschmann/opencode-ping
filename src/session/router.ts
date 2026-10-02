@@ -1,46 +1,106 @@
 /**
  * Pure V2 event router: maps subscribed events to ntfy notifications.
  *
- * Owns the per-session debounce state so `src/index.ts` stays a thin subscribe
+ * Owns the per-family debounce state so `src/index.ts` stays a thin subscribe
  * loop. All payloads are read from `event.data` (V2 shape). Never throws:
  * notification failures are swallowed by `sendNotification`.
  *
- * Idle detection: v2.0.8 does NOT emit `session.status` or `session.idle` at
- * runtime (verified against the live `/api/event` stream — they exist in the
- * schema but never fire). Instead we treat a quiet period after the last
- * `session.step.ended` as "idle": each step-ended resets the debounce, each
- * step-started cancels it, and the ping fires only once no step has ended for
- * `NTFY.DEBOUNCE_MS`. This coalesces the many steps in a turn into one ping.
+ * Idle detection is FAMILY-AWARE. A turn can spawn subagents (child sessions);
+ * each runs its own execution lifecycle. Treating any single session going
+ * quiet as "idle" fires a ping every time a subagent finishes, even while the
+ * armed root is still working. Instead we track:
+ *
+ *   - parentID links (`session.created`) to resolve a session's family root,
+ *   - per-session running state (`session.execution.*`, `session.status`),
+ *
+ * and only ping "idle" once the armed root AND every known descendant have
+ * stopped running. A short debounce coalesces the many execution boundaries in
+ * a turn (and lets a parent resume after a child reports back) into one ping.
  */
 import { NTFY } from '../constants.js'
 import { sendNotification } from '../notify.js'
-import { getCodename } from './registry.js'
+import { getCodename, isArmed } from './registry.js'
 
-interface SessionState {
-  debounceTimer: ReturnType<typeof setTimeout> | null
-}
+/** sessionID -> parentID (only children appear here). */
+const parentOf = new Map<string, string>()
+/** sessionID -> currently executing. Absent/false means not running. */
+const running = new Map<string, boolean>()
+/** root sessionID -> pending idle debounce timer. */
+const idleTimers = new Map<string, ReturnType<typeof setTimeout>>()
+/** root sessionID -> set of family members seen (root + descendants). */
+const familyMembers = new Map<string, Set<string>>()
 
-const sessions = new Map<string, SessionState>()
-
-function getSession(id: string): SessionState {
-  let s = sessions.get(id)
-  if (!s) {
-    s = { debounceTimer: null }
-    sessions.set(id, s)
+/** Walk parentID links to the family root. Self when no parent is known. */
+function rootOf(sessionID: string): string {
+  const seen = new Set<string>()
+  let current = sessionID
+  for (;;) {
+    const parent = parentOf.get(current)
+    if (!parent || seen.has(parent)) return current
+    seen.add(parent)
+    current = parent
   }
-  return s
 }
 
-function clearDebounce(s: SessionState): void {
-  if (s.debounceTimer) {
-    clearTimeout(s.debounceTimer)
-    s.debounceTimer = null
+/** Record a session as part of its root's family for later idle checks. */
+function trackMember(sessionID: string): string {
+  const root = rootOf(sessionID)
+  let members = familyMembers.get(root)
+  if (!members) {
+    members = new Set([root])
+    familyMembers.set(root, members)
+  }
+  members.add(sessionID)
+  return root
+}
+
+/** True when the root and every tracked descendant have stopped running. */
+function familyIdle(root: string): boolean {
+  if (running.get(root)) return false
+  const members = familyMembers.get(root)
+  if (!members) return true
+  for (const member of members) {
+    if (running.get(member)) return false
+  }
+  return true
+}
+
+function clearIdleTimer(root: string): void {
+  const timer = idleTimers.get(root)
+  if (timer) {
+    clearTimeout(timer)
+    idleTimers.delete(root)
   }
 }
 
-function notifyIfArmed(sessionID: string | undefined, kind: 'error' | 'permission' | 'question'): void {
+/**
+ * Reconsider idle for a family root. Cancels any pending ping, then schedules a
+ * fresh one only when the whole family is quiet and the root is armed.
+ */
+function reconsiderIdle(root: string): void {
+  clearIdleTimer(root)
+  if (!isArmed(root)) return
+  if (!familyIdle(root)) return
+  const codename = getCodename(root)
+  if (!codename) return
+  const timer = setTimeout(() => {
+    idleTimers.delete(root)
+    // Re-check at fire time: a late execution.started may have resumed work.
+    if (isArmed(root) && familyIdle(root)) {
+      sendNotification('idle', codename)
+    }
+  }, NTFY.DEBOUNCE_MS)
+  idleTimers.set(root, timer)
+}
+
+/** Notify the armed family root for an immediate (non-idle) event. */
+function notifyRootIfArmed(
+  sessionID: string | undefined,
+  kind: 'error' | 'permission' | 'question'
+): void {
   if (!sessionID) return
-  const codename = getCodename(sessionID)
+  const root = trackMember(sessionID)
+  const codename = getCodename(root)
   if (codename) sendNotification(kind, codename)
 }
 
@@ -49,48 +109,76 @@ export function handleEvent(event: { type?: string; data?: any }): void {
   const data = event?.data ?? {}
 
   switch (event?.type) {
-    case 'session.step.started': {
-      // A new step means the turn is still active — cancel any pending idle.
+    case 'session.created': {
       const sessionID = data.sessionID
       if (!sessionID) return
-      clearDebounce(getSession(sessionID))
+      if (data.parentID) parentOf.set(sessionID, data.parentID)
+      trackMember(sessionID)
       return
     }
 
-    case 'session.step.ended': {
-      // Turn may be winding down. Reset the debounce; ping fires only if no
-      // further step ends within the window.
+    case 'session.execution.started': {
       const sessionID = data.sessionID
       if (!sessionID) return
-      const s = getSession(sessionID)
-      clearDebounce(s)
-      const codename = getCodename(sessionID)
-      if (codename) {
-        s.debounceTimer = setTimeout(() => {
-          s.debounceTimer = null
-          sendNotification('idle', codename)
-        }, NTFY.DEBOUNCE_MS)
+      running.set(sessionID, true)
+      const root = trackMember(sessionID)
+      // Work resumed somewhere in the family — cancel any pending idle ping.
+      clearIdleTimer(root)
+      return
+    }
+
+    case 'session.execution.succeeded':
+    case 'session.execution.interrupted': {
+      const sessionID = data.sessionID
+      if (!sessionID) return
+      running.set(sessionID, false)
+      const root = trackMember(sessionID)
+      reconsiderIdle(root)
+      return
+    }
+
+    case 'session.execution.failed': {
+      const sessionID = data.sessionID
+      if (!sessionID) return
+      running.set(sessionID, false)
+      // A failed execution is still an attention-worthy stop: notify, then also
+      // reconsider idle so the family-quiet ping doesn't double up.
+      notifyRootIfArmed(sessionID, 'error')
+      reconsiderIdle(rootOf(sessionID))
+      return
+    }
+
+    case 'session.status': {
+      // Belt-and-suspenders: some flows emit status without an execution event.
+      const sessionID = data.sessionID
+      const statusType = data.status?.type
+      if (!sessionID || !statusType) return
+      if (statusType === 'busy') {
+        running.set(sessionID, true)
+        clearIdleTimer(trackMember(sessionID))
+      } else if (statusType === 'idle') {
+        running.set(sessionID, false)
+        reconsiderIdle(trackMember(sessionID))
       }
       return
     }
 
-    case 'session.execution.failed':
-      notifyIfArmed(data.sessionID, 'error')
-      return
-
     case 'permission.asked':
-      notifyIfArmed(data.sessionID, 'permission')
+      notifyRootIfArmed(data.sessionID, 'permission')
       return
 
     case 'form.created':
       // sessionID is nested inside the form info, not top-level.
-      notifyIfArmed(data.form?.sessionID, 'question')
+      notifyRootIfArmed(data.form?.sessionID, 'question')
       return
   }
 }
 
-/** Clear all pending debounce timers — called from plugin cleanup. */
+/** Clear all pending debounce timers and family state — called from cleanup. */
 export function disposeAll(): void {
-  for (const s of sessions.values()) clearDebounce(s)
-  sessions.clear()
+  for (const timer of idleTimers.values()) clearTimeout(timer)
+  idleTimers.clear()
+  parentOf.clear()
+  running.clear()
+  familyMembers.clear()
 }
